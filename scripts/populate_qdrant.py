@@ -47,14 +47,28 @@ def run_ingestion_for_list(filepath: str, list_name: str, delay: float = 0.1) ->
 
 
 def main():
+    import json
+    interim_dir = "data/interim"
+    os.makedirs(interim_dir, exist_ok=True)
+    cache_file = os.path.join(interim_dir, "enriched_places.json")
+
     all_places = []
+    
+    if os.path.exists(cache_file):
+        print(f"\n=== Loading enriched places from cache: {cache_file} ===")
+        with open(cache_file, "r", encoding="utf-8") as f:
+            all_places = json.load(f)
+    else:
+        for lst in LISTS:
+            print(f"\n=== Ingesting '{lst['list_name']}' from {lst['filepath']} ===")
+            places = run_ingestion_for_list(lst["filepath"], lst["list_name"])
+            all_places.extend(places)
+        
+        print(f"\n=== Saving {len(all_places)} enriched places to cache ===")
+        with open(cache_file, "w", encoding="utf-8") as f:
+            json.dump(all_places, f, indent=2)
 
-    for lst in LISTS:
-        print(f"\n=== Ingesting '{lst['list_name']}' from {lst['filepath']} ===")
-        places = run_ingestion_for_list(lst["filepath"], lst["list_name"])
-        all_places.extend(places)
-
-    print(f"\n=== Total places ingested: {len(all_places)} ===")
+    print(f"\n=== Total places to embed: {len(all_places)} ===")
 
     print("\n=== Generating embeddings ===")
     all_places = embed_places(all_places)
