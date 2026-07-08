@@ -1,5 +1,5 @@
 flask
 python-dotenv
-google-generativeai
+google-genai
 qdrant-client
 requests

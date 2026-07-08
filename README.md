@@ -9,7 +9,7 @@ A RAG (Retrieval Augmented Generation) application that lets you search your per
 
 ## Tech Stack
 - **Python / Flask** — backend and web interface
-- **Google Gemini** (`text-embedding-004`) — vector embeddings
+- **Google Gemini** (`gemini-embedding-001`) — vector embeddings
 - **Qdrant Cloud** — vector database
 - **Google Places API** — restaurant enrichment (hours, price, cuisine)
 
