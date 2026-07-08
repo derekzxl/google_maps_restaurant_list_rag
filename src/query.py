@@ -17,6 +17,15 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 GENERATIVE_MODEL = "gemini-2.0-flash"
 
 
+import json
+from pydantic import BaseModel
+from typing import Literal
+from google.genai import types
+
+class QueryClassifier(BaseModel):
+    list_name: Literal["visited", "want_to_go", "null"]
+
+
 def detect_list_filter(user_query: str) -> str | None:
     """
     Ask Gemini to determine which list filter to apply based on the query.
@@ -28,17 +37,23 @@ You are a classifier. Given a user's restaurant search query, determine which li
 - "want_to_go": they want restaurants they haven't been to yet (e.g. "suggest", "recommend", "haven't tried", "want to go", "new places")
 - null: the query is ambiguous or could apply to both lists
 
-Reply with ONLY one of these exact strings: visited, want_to_go, null
-No explanation, no punctuation, just the string.
-
 Query: {user_query}
 """.strip()
 
-    response = client.models.generate_content(
-        model=GENERATIVE_MODEL,
-        contents=prompt,
-    )
-    result = response.text.strip().lower()
+    try:
+        response = client.models.generate_content(
+            model=GENERATIVE_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=QueryClassifier,
+            ),
+        )
+        data = json.loads(response.text)
+        result = data.get("list_name")
+    except Exception as e:
+        print(f"  Warning: Classifier failed, falling back to searching both lists. Error: {e}")
+        result = "null"
 
     if result == "visited":
         return "visited"
@@ -97,17 +112,23 @@ def answer_query(user_query: str, top_k: int = 5) -> str:
     5. Ask Gemini to answer using only that context
     Returns a natural language answer string.
     """
-    # Step 1: detect list filter
-    list_filter = detect_list_filter(user_query)
-    filter_label = list_filter or "both lists"
-    print(f"  List filter detected: {filter_label}")
+    try:
+        # Step 1: detect list filter
+        list_filter = detect_list_filter(user_query)
+        filter_label = list_filter or "both lists"
+        print(f"  List filter detected: {filter_label}")
 
-    # Step 2: embed the query
-    query_vector = embed_query(user_query)
+        # Step 2: embed the query
+        query_vector = embed_query(user_query)
 
-    # Step 3: retrieve
-    qdrant_client = get_client()
-    retrieved = search(qdrant_client, query_vector, top_k=top_k, list_name=list_filter)
+        # Step 3: retrieve
+        qdrant_client = get_client()
+        retrieved = search(qdrant_client, query_vector, top_k=top_k, list_name=list_filter)
+    except Exception as e:
+        print(f"Error during retrieval: {e}")
+        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+            return "Unable to perform search because the Gemini API quota/credits are depleted. Please check your Gemini billing details."
+        return "Failed to query the restaurant database. Please check your Qdrant or API connection."
 
     if not retrieved:
         return "I couldn't find any matching restaurants in your saved lists."
@@ -132,11 +153,17 @@ USER QUESTION: {user_query}
 ANSWER:
     """.strip()
 
-    response = client.models.generate_content(
-        model=GENERATIVE_MODEL,
-        contents=prompt,
-    )
-    return response.text
+    try:
+        response = client.models.generate_content(
+            model=GENERATIVE_MODEL,
+            contents=prompt,
+        )
+        return response.text
+    except Exception as e:
+        print(f"Error during response generation: {e}")
+        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+            return "Unable to generate answer because the Gemini API quota/credits are depleted. Please check your Gemini billing details."
+        return "Failed to generate an answer from Gemini. Please try again later."
 
 
 if __name__ == "__main__":

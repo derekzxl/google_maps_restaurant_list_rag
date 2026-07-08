@@ -6,8 +6,10 @@ restaurant with live data from the Google Places API.
 
 import csv
 import os
+import re
 import time
 import requests
+import s2sphere
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -34,9 +36,32 @@ def load_csv(filepath: str) -> list[dict]:
     return places
 
 
-def find_place(name: str) -> str | None:
+def extract_coords_from_url(url: str) -> tuple[float, float] | None:
+    """
+    Extract approximate lat/lng from a Google Maps Takeout URL.
+    The first hex value (e.g. 0x89b64c3a308e63d5) in the !1s parameter
+    is an S2 Cell ID that encodes geographic coordinates.
+    Returns (lat, lng) tuple or None if parsing fails.
+    """
+    if not url:
+        return None
+    match = re.search(r'!1s(0x[0-9a-fA-F]+):', url)
+    if not match:
+        return None
+    try:
+        cell_id_int = int(match.group(1), 16)
+        cell = s2sphere.CellId(cell_id_int)
+        latlng = cell.to_lat_lng()
+        return (latlng.lat().degrees, latlng.lng().degrees)
+    except Exception:
+        return None
+
+
+def find_place(name: str, url: str | None = None) -> str | None:
     """
     Use Places API Text Search to find a place_id from a restaurant name.
+    If a Google Maps URL is provided, extracts coordinates via S2 Cell ID
+    decoding and passes them as locationbias for more accurate results.
     Returns the place_id string or None if not found.
     """
     endpoint = "https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
@@ -46,6 +71,12 @@ def find_place(name: str) -> str | None:
         "fields": "place_id",
         "key": PLACES_API_KEY,
     }
+
+    coords = extract_coords_from_url(url)
+    if coords:
+        lat, lng = coords
+        params["locationbias"] = f"point:{lat},{lng}"
+
     response = requests.get(endpoint, params=params)
     data = response.json()
     candidates = data.get("candidates", [])
@@ -87,7 +118,7 @@ def enrich_place(place: dict) -> dict:
     Find a place via Text Search, then enrich with Place Details.
     Returns the place dict with additional fields merged in.
     """
-    place_id = find_place(place["name"])
+    place_id = find_place(place["name"], place.get("url"))
     if not place_id:
         print(f"    WARNING: Could not find place_id for '{place['name']}'")
         return place
@@ -165,12 +196,3 @@ def run_ingestion(csv_filepath: str, delay: float = 0.1) -> list[dict]:
     print(f"\nIngestion complete. {succeeded}/{len(enriched)} places successfully enriched.")
     return enriched
 
-
-if __name__ == "__main__":
-    import json
-    places = run_ingestion("data/raw/Saved Places.csv")
-    # Print first result as a sanity check
-    if places:
-        print("\nSample output:")
-        sample = {k: v for k, v in places[0].items() if k != "embedding"}
-        print(json.dumps(sample, indent=2))

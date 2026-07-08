@@ -69,8 +69,12 @@ def search():
     if not query:
         return jsonify({"answer": "Please enter a search query."})
 
-    answer = answer_query(query)
-    return jsonify({"answer": answer})
+    try:
+        answer = answer_query(query)
+        return jsonify({"answer": answer})
+    except Exception as e:
+        print(f"Error processing query: {e}")
+        return jsonify({"answer": "Sorry, an error occurred while processing your request. Please try again later."}), 500
 
 
 if __name__ == "__main__":

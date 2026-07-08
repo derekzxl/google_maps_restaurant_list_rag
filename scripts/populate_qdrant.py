@@ -35,6 +35,14 @@ def run_ingestion_for_list(filepath: str, list_name: str, delay: float = 0.1) ->
         enriched.append(place)
         time.sleep(delay)
 
+    # Filter out failed enrichments
+    failed = [p for p in enriched if not p.get("place_id")]
+    if failed:
+        print(f"\n  ⚠️ Skipping {len(failed)} places that failed Place Details enrichment:")
+        for p in failed:
+            print(f"    - {p['name']}")
+    enriched = [p for p in enriched if p.get("place_id")]
+
     return enriched
 
 

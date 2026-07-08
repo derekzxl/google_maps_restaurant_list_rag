@@ -42,7 +42,13 @@ def create_collection(client: QdrantClient):
                 distance=Distance.COSINE,
             ),
         )
-        print(f"Created collection: {COLLECTION_NAME}")
+        # Create payload index on list_name for faster filtering
+        client.create_payload_index(
+            collection_name=COLLECTION_NAME,
+            field_name="list_name",
+            field_schema="keyword",
+        )
+        print(f"Created collection and index on list_name: {COLLECTION_NAME}")
     else:
         print(f"Collection already exists: {COLLECTION_NAME}")
 
