@@ -43,7 +43,7 @@ cp .env.example .env
 
 ### 4. Build the index (run once)
 ```bash
-python scripts/build_index.py
+python scripts/populate_qdrant.py
 ```
 
 ### 5. Run the app
