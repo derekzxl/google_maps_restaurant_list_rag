@@ -25,7 +25,7 @@ HTML = """
 </head>
 <body>
     <h2>Search My Saved Restaurants</h2>
-    <input type="text" id="query" placeholder='e.g. "Italian places open now that aren\'t too expensive"' />
+    <input type="text" id="query" placeholder="e.g. Italian places open now that aren't too expensive" />
     <button onclick="search()">Search</button>
     <div id="spinner">Searching...</div>
     <div id="result"></div>
