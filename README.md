@@ -6,6 +6,8 @@ A RAG (Retrieval Augmented Generation) application that lets you search your per
 - "Any good Japanese restaurants that aren't too expensive?"
 - "Italian places I've noted as good for dates"
 - "What Korean BBQ spots have I saved?"
+- "Suggest somewhere cheap I haven't tried yet"
+- "Remind me places I've been where portions were too small"
 
 ## Tech Stack
 - **Python / Flask** — backend and web interface
@@ -37,13 +39,13 @@ cp .env.example .env
 
 ### 3. Export your Google Maps data
 1. Go to [takeout.google.com](https://takeout.google.com)
-2. Deselect all, then select only **Maps**
+2. Deselect all, then select only **Saved**.
 3. Download and extract
-4. Copy `Saved Places.json` to `data/raw/Saved Places.json`
+4. Locate your exported CSV files — one per saved list (e.g. `Food.csv`, `Want to go.csv`). Copy them to `data/raw/`. Then update the `LISTS` config in `scripts/build_index.py` to match your actual filenames and assign each a label (`visited` or `want_to_go`)
 
 ### 4. Build the index (run once)
 ```bash
-python scripts/populate_qdrant.py
+python scripts/build_index.py
 ```
 
 ### 5. Run the app

@@ -65,7 +65,7 @@ def embed_places(places: list[dict]) -> list[dict]:
     """
     for i, place in enumerate(places):
         text = place.get("document_text", "")
-        time.sleep(10)
+        time.sleep(1)
         place["embedding"] = embed_text(text)
         print(f"  [{i+1}/{len(places)}] Embedded: {place['name']}") 
     return places
