@@ -95,11 +95,11 @@ def search(
             ]
         )
 
-    results = client.query_points(
+    results = client.search(
         collection_name=COLLECTION_NAME,
-        query=query_vector,
+        query_vector=query_vector,
         query_filter=query_filter,
         limit=top_k,
         with_payload=True,
     )
-    return [hit.payload for hit in results.points]
+    return [hit.payload for hit in results]

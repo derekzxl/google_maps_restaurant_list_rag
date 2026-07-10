@@ -14,7 +14,7 @@ from src.index import get_client, search
 load_dotenv()
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-GENERATIVE_MODEL = "gemini-2.5-flash-lite"
+GENERATIVE_MODEL = "gemini-2.0-flash"
 
 
 import json
@@ -53,7 +53,7 @@ Query: {user_query}
         result = data.get("list_name")
     except Exception as e:
         print(f"  Warning: Classifier failed, falling back to searching both lists. Error: {e}")
-        result = None
+        result = "null"
 
     if result == "visited":
         return "visited"

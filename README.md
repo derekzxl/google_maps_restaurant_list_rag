@@ -50,7 +50,7 @@ python scripts/build_index.py
 
 ### 5. Run the app
 ```bash
-python -m src.app
+python src/app.py
 ```
 Visit `http://localhost:5000`
 
