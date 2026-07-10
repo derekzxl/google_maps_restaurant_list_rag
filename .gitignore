@@ -4,5 +4,4 @@ __pycache__/
 *.pyo
 .venv/
 venv/
-data/raw/
-*.json
+data/
